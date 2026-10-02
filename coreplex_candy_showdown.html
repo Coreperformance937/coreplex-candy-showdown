@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coreplex Candy Showdown</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#FF6A00',
+              orangeGlow: '#FFA133',
+              orangeDark: '#B84500',
+              black: '#000000',
+              surface: '#0E0E0E',
+              surfaceCard: '#141414',
+              surfaceCardHover: '#1B1815',
+              border: '#242424',
+              borderOrange: 'rgba(255, 106, 0, 0.4)'
+            }
+          },
+          fontFamily: {
+            display: ['"Chakra Petch"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Chakra Petch (Sports Scoreboard Font) & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700;1,800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      background-color: #000000;
+      color: #EDEDED;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    .font-bracket {
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    /* Active & Locked Slot Styling */
+    .slot-card {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slot-card.active-round:hover {
+      border-color: #FF6A00;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 18px rgba(255, 106, 0, 0.28);
+    }
+    .slot-card.locked-round {
+      opacity: 0.65;
+      background: rgba(14, 14, 14, 0.7);
+      border-style: dashed;
+    }
+
+    /* March Madness Branch Connector Lines */
+    .branch-connector-left {
+      position: relative;
+    }
+    .branch-connector-left::after {
+      content: '';
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      width: 10px;
+      height: 2px;
+      background: #2D2D2D;
+    }
+
+    /* TV Fit Mode Transformation */
+    .tv-scale-fit {
+      transform: scale(0.85);
+      transform-origin: top center;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080808;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #FF6A00;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #FFA133;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 106, 0, 0.25); }
+      50% { box-shadow: 0 0 35px rgba(255, 106, 0, 0.7); }
+    }
+    .glow-animate {
+      animation: pulseGlow 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-black text-gray-100">
+
+  <!-- TOURNAMENT MAIN HEADER -->
+  <header class="border-b border-[#242424] bg-[#0A0A0A]/95 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5 shadow-2xl">
+    <div class="max-w-[1920px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+      
+      <!-- Brand & Description -->
+      <div class="flex items-center gap-4">
+        <div class="w-13 h-13 p-2.5 rounded-2xl bg-gradient-to-br from-[#FF6A00] via-[#CC5500] to-[#802B00] flex items-center justify-center font-bracket font-extrabold text-2xl text-black shadow-[0_0_25px_rgba(255,106,0,0.55)] border border-orange-400">
+          🎃
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-wider font-bracket text-white flex items-center gap-2">
+              COREPLEX CANDY SHOWDOWN
+              <span id="currentRoundBadge" class="text-xs bg-[#FF6A00] text-black font-extrabold px-2.5 py-0.5 rounded tracking-normal">
+                ROUND 1 OF 6
+              </span>
+            </h1>
+          </div>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium">
+            <span class="text-[#FF6A00] font-bold">Reverse Halloween Rules:</span> #1 vs #2 titans clash immediately. Subsequent rounds stay locked until the current round finishes!
+          </p>
+        </div>
+      </div>
+
+      <!-- TV Countdown Timer & Round Controls -->
+      <div class="flex flex-wrap items-center gap-4">
+        
+        <!-- Live Round Timer Widget -->
+        <div class="flex items-center gap-4 bg-[#121212] border border-[#2A2A2A] rounded-xl px-4 py-2 shadow-inner">
+          <div class="text-right">
+            <div id="roundTimerLabel" class="text-[9px] uppercase font-extrabold text-gray-400 tracking-widest font-bracket">
+              ROUND 1 VOTING LOCKS IN
+            </div>
+            <div id="roundTimerDisplay" class="font-bracket font-bold text-[#FF6A00] text-base sm:text-lg tracking-wider">
+              04d : 13h : 28m : 14s
+            </div>
+          </div>
+          <div class="h-8 w-px bg-[#262626]"></div>
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6A00] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-[#FF6A00]"></span>
+            </span>
+            <span class="text-xs font-bold text-gray-300 uppercase font-bracket tracking-wider">Live On TV</span>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-1.5 bg-[#121212] p-1.5 rounded-xl border border-[#262626]">
+          <button id="btnTabBracket" onclick="switchView('bracket')" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-[#FF6A00] text-black shadow-lg transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-sitemap"></i> Full March Madness
+          </button>
+          <button id="btnTabArena" onclick="switchView('arena')" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-tv"></i> TV Arena Spotlight
+          </button>
+        </div>
+
+        <!-- TV Fit Button & Sound -->
+        <div class="flex items-center gap-2">
+          <button id="btnTvFit" onclick="toggleTvFit()" title="Fit entire bracket to TV screen" class="px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#202020] border border-[#282828] text-gray-300 hover:text-[#FF6A00] text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1">
+            <i class="fa-solid fa-expand"></i> <span id="fitLabel">Fit TV</span>
+          </button>
+          <button onclick="toggleAudio()" id="audioBtn" title="Toggle Sound Effects" class="p-2.5 rounded-xl bg-[#141414] hover:bg-[#202020] border border-[#282828] text-[#FF6A00] transition-colors">
+            <i id="audioIcon" class="fa-solid fa-volume-high text-sm"></i>
+          </button>
+          <button onclick="openQrModal()" class="px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#202020] border border-[#FF6A00]/50 text-[#FF6A00] font-bold text-xs flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-qrcode"></i> Scan to Vote
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- LIVE MARQUEE TICKER -->
+  <div class="bg-[#FF6A00] text-black text-xs font-bold uppercase tracking-wider py-1.5 px-4 overflow-hidden shadow-lg border-b border-orange-400">
+    <div class="flex items-center">
+      <span class="bg-black text-[#FF6A00] px-2.5 py-0.5 rounded font-bracket text-[11px] font-black shrink-0 flex items-center gap-1">
+        <i class="fa-solid fa-bolt text-xs"></i> TOURNAMENT WIRE
+      </span>
+      <marquee behavior="scroll" direction="left" scrollamount="6" class="w-full mx-4 font-semibold">
+        🎃 [ROUND 1 ACTIVE] Subsequent rounds will remain locked until the Round 1 timer expires! &bull; [#1] Reese's Peanut Butter Pumpkins leads [#2] Fun Size Twix &bull; [#63] Candy Corn battles [#64] Peanut Butter Kisses in Wax &bull; Championship takes place the week of Halloween! &bull; Scan TV QR code to vote!
+      </marquee>
+      <span class="bg-black text-[#FF6A00] px-2 py-0.5 rounded text-[10px] font-black">OHIO & NATIONAL FEED</span>
+    </div>
+  </div>
+
+  <!-- MAIN DISPLAY WRAPPER -->
+  <main class="flex-1 p-3 sm:p-6 max-w-[1920px] mx-auto w-full">
+
+    <!-- VIEW 1: FULL MARCH MADNESS TOURNAMENT TREE VIEW -->
+    <section id="viewBracket" class="space-y-4 block">
+      
+      <!-- Subbar info & round status indicators -->
+      <div class="flex flex-col md:flex-row items-center justify-between bg-[#111111] p-3.5 rounded-xl border border-[#222222] gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#FF6A00] animate-ping"></div>
+          <p class="text-xs text-gray-300">
+            <span class="text-[#FF6A00] font-bold font-bracket">PROGRESSION LOCK ACTIVE:</span>
+            Only the current active round has open voting. Winners will populate into the next round's locked slots the moment the round clock reaches zero.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="adminConcludeRound()" class="text-xs px-3.5 py-1.5 rounded-lg bg-[#FF6A00] text-black hover:bg-[#FFA133] font-extrabold uppercase font-bracket shadow-lg transition">
+            <i class="fa-solid fa-forward-step mr-1"></i> Conclude Round 1 Now (Simulate Advance)
+          </button>
+        </div>
+      </div>
+
+      <!-- HORIZONTAL MARCH MADNESS BRACKET CONTAINER -->
+      <div id="bracketScrollContainer" class="overflow-x-auto pb-8 pt-2 transition-all">
+        <div id="bracketGrid" class="min-w-[1720px] grid grid-cols-7 gap-5 items-stretch">
+
+          <!-- COL 1: LEFT ROUND OF 64 (ACTIVE) -->
+          <div class="space-y-3">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span class="text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket flex items-center justify-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse"></span> Round 1: Round of 64
+              </span>
+              <p class="text-[10px] text-gray-400">Left Wing: Top 32 Heavyweights</p>
+            </div>
+            <div id="colLeftR64" class="space-y-3">
+              <!-- Dynamically populated with active cards -->
+            </div>
+          </div>
+
+          <!-- COL 2: LEFT ROUND OF 32 (LOCKED UNTIL R1 FINISHES) -->
+          <div class="space-y-8 pt-6">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span id="labelLeftR32" class="text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1">
+                <i class="fa-solid fa-lock text-[10px]"></i> Round 2: Round of 32
+              </span>
+              <p class="text-[10px] text-gray-500">Unlocks After Round 1</p>
+            </div>
+            <div id="colLeftR32" class="space-y-8">
+              <!-- Dynamically populated with locked/awaiting slots -->
+            </div>
+          </div>
+
+          <!-- COL 3: LEFT SWEET 16 (LOCKED) -->
+          <div class="space-y-24 pt-16">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span id="labelLeftS16" class="text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1">
+                <i class="fa-solid fa-lock text-[10px]"></i> Round 3: Sweet 16
+              </span>
+              <p class="text-[10px] text-gray-500">Unlocks After Round 2</p>
+            </div>
+            <div id="colLeftS16" class="space-y-24">
+              <!-- Dynamically populated with locked/awaiting slots -->
+            </div>
+          </div>
+
+          <!-- COL 4: CENTER COURT CHAMPIONSHIP & FINAL FOUR (OCTOBER 25-31 HALLOWEEN WEEK) -->
+          <div class="flex flex-col items-center justify-center px-4 py-8 bg-gradient-to-b from-[#140D07] via-[#0A0704] to-[#000000] rounded-2xl border-2 border-[#FF6A00]/50 shadow-[0_0_50px_rgba(255,106,0,0.25)] space-y-6">
+            <div class="text-center">
+              <span class="text-[10px] uppercase font-black text-black bg-[#FF6A00] px-3.5 py-1 rounded-full tracking-widest shadow-md">
+                Halloween Week Finale
+              </span>
+              <h3 class="text-xl sm:text-2xl font-black font-bracket uppercase tracking-wider text-white mt-2">
+                Championship Game
+              </h3>
+              <p class="text-xs text-orange-300/80 font-medium">Scheduled: October 25 – October 31</p>
+            </div>
+
+            <!-- Trophy Showcase -->
+            <div class="relative text-center">
+              <div class="w-20 h-20 mx-auto rounded-full bg-[#1C1209] border-2 border-[#FF6A00] flex items-center justify-center text-4xl shadow-[0_0_30px_#FF6A00] glow-animate">
+                🏆
+              </div>
+              <div class="font-bracket font-extrabold text-sm text-[#FF6A00] tracking-wider uppercase mt-2">
+                Coreplex Candy Trophy
+              </div>
+            </div>
+
+            <!-- Center Court Duel Slot (Locked until Final Round) -->
+            <div class="w-full p-4 bg-black/90 rounded-xl border border-[#333] text-center space-y-3 shadow-inner">
+              <div class="text-[10px] font-bold text-[#FF6A00] uppercase tracking-wider font-bracket">Top-Tier Surviving Elite</div>
+              <div id="champSlotA" class="p-3 rounded-lg bg-[#141414] border border-dashed border-[#333] font-medium text-xs text-gray-400 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock text-[10px] text-gray-500"></i>
+                <span id="champNameA">Awaiting Semi-Final 1 Result</span>
+              </div>
+              
+              <div class="text-xs font-black text-[#FF6A00] font-bracket">VS</div>
+              
+              <div id="champSlotB" class="p-3 rounded-lg bg-[#141414] border border-dashed border-[#333] font-medium text-xs text-gray-400 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock text-[10px] text-gray-500"></i>
+                <span id="champNameB">Awaiting Semi-Final 2 Result</span>
+              </div>
+              <div class="text-[10px] font-bold text-[#FF6A00] uppercase tracking-wider font-bracket">Bottom-Tier Surviving Relic</div>
+            </div>
+
+            <p class="text-[11px] text-gray-400 text-center max-w-xs leading-relaxed">
+              In this reverse setup, one universally despised Halloween relic will reach this national stage!
+            </p>
+          </div>
+
+          <!-- COL 5: RIGHT SWEET 16 (LOCKED) -->
+          <div class="space-y-24 pt-16">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span id="labelRightS16" class="text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1">
+                <i class="fa-solid fa-lock text-[10px]"></i> Round 3: Sweet 16
+              </span>
+              <p class="text-[10px] text-gray-500">Unlocks After Round 2</p>
+            </div>
+            <div id="colRightS16" class="space-y-24">
+              <!-- Dynamically populated with locked/awaiting slots -->
+            </div>
+          </div>
+
+          <!-- COL 6: RIGHT ROUND OF 32 (LOCKED UNTIL R1 FINISHES) -->
+          <div class="space-y-8 pt-6">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span id="labelRightR32" class="text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1">
+                <i class="fa-solid fa-lock text-[10px]"></i> Round 2: Round of 32
+              </span>
+              <p class="text-[10px] text-gray-500">Unlocks After Round 1</p>
+            </div>
+            <div id="colRightR32" class="space-y-8">
+              <!-- Dynamically populated with locked/awaiting slots -->
+            </div>
+          </div>
+
+          <!-- COL 7: RIGHT ROUND OF 64 (ACTIVE) -->
+          <div class="space-y-3">
+            <div class="text-center pb-2 border-b border-[#262626]">
+              <span class="text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket flex items-center justify-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse"></span> Round 1: Round of 64
+              </span>
+              <p class="text-[10px] text-gray-400">Right Wing: 32 Basement Contenders</p>
+            </div>
+            <div id="colRightR64" class="space-y-3">
+              <!-- Dynamically populated with active cards -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: TV ARENA SPOTLIGHT (HIGH CONTRAST BIG SCREEN MODE) -->
+    <section id="viewArena" class="hidden max-w-5xl mx-auto space-y-6">
+      
+      <!-- Top banner for spotlight -->
+      <div class="flex flex-col sm:flex-row items-center justify-between bg-[#111111] p-4 rounded-2xl border border-[#262626] gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#FF6A00]/20 border border-[#FF6A00]/60 flex items-center justify-center text-[#FF6A00] font-black text-xl font-bracket">
+            ⚔️
+          </div>
+          <div>
+            <span class="text-[10px] font-black uppercase tracking-widest text-[#FF6A00] font-bracket">LIVE ACTIVE MATCHUP SPOTLIGHT</span>
+            <h2 id="arenaMatchupTitle" class="text-xl sm:text-2xl font-black uppercase text-white font-bracket">Matchup #1: Reese's vs Twix</h2>
+          </div>
+        </div>
+
+        <!-- Matchup Navigator -->
+        <div class="flex items-center gap-2">
+          <button onclick="prevArenaMatchup()" class="px-4 py-2 bg-[#1C1C1C] hover:bg-[#2C2C2C] border border-[#333] text-xs font-bold rounded-xl uppercase tracking-wider text-gray-200 transition">
+            <i class="fa-solid fa-chevron-left mr-1"></i> Prev Duel
+          </button>
+          <span id="arenaCounterBadge" class="text-xs font-bracket font-bold text-gray-400 px-2">1 / 16</span>
+          <button onclick="nextArenaMatchup()" class="px-4 py-2 bg-[#FF6A00] hover:bg-[#FFA133] text-black text-xs font-black rounded-xl uppercase tracking-wider transition">
+            Next Duel <i class="fa-solid fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Large Format Dual Spotlight Card (Optimized for 10ft TV Viewing) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#0C0C0C] p-6 sm:p-10 rounded-3xl border-2 border-[#242424] shadow-[0_15px_60px_rgba(0,0,0,0.9)] relative">
+        
+        <!-- Center VS Badge -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col items-center">
+          <div class="w-16 h-16 rounded-full bg-[#FF6A00] border-4 border-black flex items-center justify-center font-bracket font-black text-2xl text-black shadow-[0_0_30px_#FF6A00] glow-animate">
+            VS
+          </div>
+        </div>
+
+        <!-- Contender A Card -->
+        <div id="spotlightCardA" class="bg-[#141414] p-6 sm:p-8 rounded-2xl border-2 border-[#282828] hover:border-[#FF6A00] transition-all flex flex-col justify-between space-y-6 shadow-xl">
+          <div class="flex justify-between items-start">
+            <span id="spotlightSeedA" class="text-xs sm:text-sm font-extrabold text-[#FF6A00] font-bracket px-3 py-1 bg-black rounded-lg border border-[#FF6A00]/40">
+              SEED #1
+            </span>
+            <span id="spotlightEmojiA" class="text-5xl sm:text-6xl drop-shadow-[0_10px_20px_rgba(255,106,0,0.3)]">🎃</span>
+          </div>
+
+          <div class="space-y-2">
+            <h3 id="spotlightNameA" class="text-2xl sm:text-3xl font-black text-white font-bracket tracking-tight">
+              Reese’s Peanut Butter Pumpkins
+            </h3>
+            <p id="spotlightDescA" class="text-xs sm:text-sm text-gray-400">
+              The undisputed king of the Halloween pillowcase haul. Maximum peanut butter ratio.
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex justify-between items-end font-bracket">
+              <div>
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Live Votes</div>
+                <div id="spotlightVotesA" class="text-xl sm:text-2xl font-black text-white">642</div>
+              </div>
+              <div id="spotlightPercentA" class="text-3xl sm:text-4xl font-black text-[#FF6A00]">54%</div>
+            </div>
+
+            <!-- Percentage Bar -->
+            <div class="w-full h-3.5 bg-[#202020] rounded-full overflow-hidden p-0.5 border border-[#333]">
+              <div id="spotlightBarA" class="h-full bg-gradient-to-r from-[#FF6A00] to-[#FFA133] rounded-full transition-all duration-300" style="width: 54%"></div>
+            </div>
+
+            <!-- Vote Button -->
+            <button onclick="castSpotlightVote('c1')" class="w-full py-4 rounded-xl bg-[#FF6A00] hover:bg-[#FFA133] text-black font-extrabold text-sm sm:text-base uppercase tracking-wider active:scale-95 transition shadow-[0_0_25px_rgba(255,106,0,0.35)] flex items-center justify-center gap-2">
+              <i class="fa-solid fa-candy-cane text-lg"></i>
+              <span id="voteBtnLabelA">Vote For Reese's</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contender B Card -->
+        <div id="spotlightCardB" class="bg-[#141414] p-6 sm:p-8 rounded-2xl border-2 border-[#282828] hover:border-[#FF6A00] transition-all flex flex-col justify-between space-y-6 shadow-xl">
+          <div class="flex justify-between items-start">
+            <span id="spotlightSeedB" class="text-xs sm:text-sm font-extrabold text-[#FF6A00] font-bracket px-3 py-1 bg-black rounded-lg border border-[#FF6A00]/40">
+              SEED #2
+            </span>
+            <span id="spotlightEmojiB" class="text-5xl sm:text-6xl drop-shadow-[0_10px_20px_rgba(255,106,0,0.3)]">🍫</span>
+          </div>
+
+          <div class="space-y-2">
+            <h3 id="spotlightNameB" class="text-2xl sm:text-3xl font-black text-white font-bracket tracking-tight">
+              Twix (Fun Size Bars)
+            </h3>
+            <p id="spotlightDescB" class="text-xs sm:text-sm text-gray-400">
+              Crunchy cookie biscuit draped in thick caramel and milk chocolate. Top trading value.
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex justify-between items-end font-bracket">
+              <div>
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Live Votes</div>
+                <div id="spotlightVotesB" class="text-xl sm:text-2xl font-black text-white">548</div>
+              </div>
+              <div id="spotlightPercentB" class="text-3xl sm:text-4xl font-black text-[#FF6A00]">46%</div>
+            </div>
+
+            <!-- Percentage Bar -->
+            <div class="w-full h-3.5 bg-[#202020] rounded-full overflow-hidden p-0.5 border border-[#333]">
+              <div id="spotlightBarB" class="h-full bg-gradient-to-r from-[#FF6A00] to-[#FFA133] rounded-full transition-all duration-300" style="width: 46%"></div>
+            </div>
+
+            <!-- Vote Button -->
+            <button onclick="castSpotlightVote('c2')" class="w-full py-4 rounded-xl bg-[#222222] hover:bg-[#333333] border border-[#FF6A00]/40 text-[#FF6A00] hover:text-white font-extrabold text-sm sm:text-base uppercase tracking-wider active:scale-95 transition shadow-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-cookie-bite text-lg"></i>
+              <span id="voteBtnLabelB">Vote For Twix</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TV Matchup Carousel Rail -->
+      <div class="bg-[#101010] p-4 rounded-2xl border border-[#222]">
+        <div class="flex items-center justify-between mb-3 text-xs text-gray-400 font-bold uppercase tracking-wider font-bracket">
+          <span>Active Matchup Selection Rail</span>
+          <span class="text-[#FF6A00]">Click any matchup to switch TV Duel</span>
+        </div>
+        <div id="spotlightRail" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2.5 max-h-36 overflow-y-auto pr-1">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FLOATING ADMIN / HOST PANEL -->
+  <div id="adminPanel" class="fixed bottom-4 right-4 z-40">
+    <div id="adminCard" class="hidden bg-[#101010] border-2 border-[#FF6A00]/60 p-4 rounded-2xl shadow-2xl max-w-xs mb-3 space-y-3 text-xs">
+      <div class="flex items-center justify-between border-b border-[#282828] pb-2">
+        <span class="font-bracket font-black text-[#FF6A00] uppercase tracking-wider">Tournament Director Controls</span>
+        <button onclick="toggleAdminPanel()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div>
+        <label class="block text-gray-400 mb-1">Simulate Random Spectator Votes:</label>
+        <button onclick="injectRandomVotes(30)" class="w-full py-2 bg-[#FF6A00] text-black font-extrabold rounded-lg hover:bg-[#FFA133] transition">
+          +30 Random Crowd Votes
+        </button>
+      </div>
+      <div>
+        <label class="block text-gray-400 mb-1">Test Round Auto-Advancement:</label>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="setTimerSeconds(10)" class="py-1.5 bg-[#1C1C1C] hover:bg-[#2C2C2C] text-gray-200 rounded font-mono font-bold">10s Timer</button>
+          <button onclick="setTimerSeconds(60)" class="py-1.5 bg-[#1C1C1C] hover:bg-[#2C2C2C] text-gray-200 rounded font-mono font-bold">1m Timer</button>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-[#262626] space-y-1.5">
+        <button onclick="adminConcludeRound()" class="w-full py-2 bg-[#FF6A00] text-black font-extrabold rounded-lg hover:bg-[#FFA133] uppercase font-bracket">
+          Advance Round Right Now
+        </button>
+        <button onclick="resetTournamentCompletely()" class="w-full py-1.5 bg-red-950 hover:bg-red-900 border border-red-700/50 text-red-300 rounded font-bold">
+          Reset Tournament to Round 1
+        </button>
+      </div>
+    </div>
+
+    <button onclick="toggleAdminPanel()" class="px-4 py-2.5 rounded-full bg-[#FF6A00] hover:bg-[#FFA133] text-black font-extrabold text-xs shadow-2xl flex items-center gap-2 border border-orange-300 ml-auto transition">
+      <i class="fa-solid fa-gear"></i>
+      <span>Director Controls</span>
+    </button>
+  </div>
+
+  <!-- QR CODE MODAL FOR MOBILE SPECTATORS -->
+  <div id="qrModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-[#121212] max-w-sm w-full p-6 sm:p-8 rounded-3xl border-2 border-[#FF6A00] text-center relative shadow-2xl">
+      <button onclick="closeQrModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="w-14 h-14 rounded-2xl bg-[#FF6A00]/20 border border-[#FF6A00] flex items-center justify-center text-3xl mx-auto text-[#FF6A00] mb-3">
+        📱
+      </div>
+
+      <h3 class="text-xl font-black text-white font-bracket uppercase tracking-wider">Scan Screen to Vote</h3>
+      <p class="text-xs text-gray-400 mt-1 mb-5">
+        Point your smartphone camera at this code to vote directly on your device.
+      </p>
+
+      <div class="bg-white p-3.5 rounded-2xl inline-block shadow-2xl mb-4 border-2 border-[#FF6A00]">
+        <svg width="180" height="180" viewBox="0 0 180 180" class="mx-auto">
+          <rect width="180" height="180" fill="#ffffff"/>
+          <!-- Position Marks -->
+          <rect x="15" y="15" width="45" height="45" fill="#000000"/>
+          <rect x="23" y="23" width="29" height="29" fill="#ffffff"/>
+          <rect x="29" y="29" width="17" height="17" fill="#FF6A00"/>
+
+          <rect x="120" y="15" width="45" height="45" fill="#000000"/>
+          <rect x="128" y="23" width="29" height="29" fill="#ffffff"/>
+          <rect x="134" y="29" width="17" height="17" fill="#FF6A00"/>
+
+          <rect x="15" y="120" width="45" height="45" fill="#000000"/>
+          <rect x="23" y="128" width="29" height="29" fill="#ffffff"/>
+          <rect x="29" y="134" width="17" height="17" fill="#FF6A00"/>
+
+          <!-- Body pattern blocks -->
+          <g fill="#000000">
+            <rect x="75" y="20" width="12" height="12"/>
+            <rect x="92" y="25" width="10" height="10"/>
+            <rect x="75" y="45" width="12" height="12"/>
+            <rect x="95" y="60" width="12" height="12"/>
+            <rect x="25" y="75" width="12" height="12"/>
+            <rect x="42" y="85" width="12" height="12"/>
+            <rect x="68" y="78" width="16" height="10"/>
+            <rect x="90" y="82" width="10" height="10"/>
+            <rect x="110" y="75" width="12" height="12"/>
+            <rect x="135" y="70" width="12" height="12"/>
+            <rect x="145" y="90" width="14" height="10"/>
+            <rect x="75" y="105" width="12" height="12"/>
+            <rect x="92" y="120" width="12" height="12"/>
+            <rect x="75" y="138" width="12" height="12"/>
+            <rect x="105" y="132" width="12" height="12"/>
+            <rect x="122" y="122" width="12" height="12"/>
+            <rect x="145" y="135" width="16" height="12"/>
+            <rect x="135" y="152" width="12" height="12"/>
+            <rect x="110" y="152" width="12" height="12"/>
+          </g>
+          <circle cx="90" cy="90" r="16" fill="#000000" />
+          <text x="90" y="96" font-size="14" text-anchor="middle" fill="#FF6A00">🎃</text>
+        </svg>
+      </div>
+
+      <div class="text-[11px] font-mono text-[#FF6A00] font-bold">
+        vote.coreplexcandy.showdown
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-[#262626]">
+        <button onclick="injectRandomVotes(1); closeQrModal();" class="w-full py-2 bg-[#FF6A00] hover:bg-[#FFA133] rounded-xl text-black font-extrabold text-xs">
+          Simulate Vote From Phone
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="voteToast" class="fixed bottom-6 left-6 bg-[#FF6A00] text-black px-4 py-2.5 rounded-xl font-bold shadow-2xl transition-all duration-300 opacity-0 translate-y-4 pointer-events-none flex items-center gap-2.5 z-50 text-xs font-bracket uppercase">
+    <span>🎃</span>
+    <span id="toastMessage">Vote cast! Standings updated.</span>
+  </div>
+
+  <script>
+    /* =========================================================
+       COREPLEX REVERSE 64 TOURNAMENT CONFIGURATION
+       All 64 Candies Seeded in Round 1:
+       - Left Wing: Seeds 1 to 32 (#1 vs #2, #3 vs #4, etc.)
+       - Right Wing: Seeds 33 to 64 (#33 vs #34 ... #63 vs #64)
+       ========================================================= */
+    const INITIAL_ROUND_1_MATCHUPS = [
+      // LEFT WING (HEAVYWEIGHTS & MAINSTREAM TITANS)
+      { id: "L1", round: 1, c1: { seed: 1, name: "Reese's Peanut Butter Pumpkins", votes: 642, emoji: "🎃", desc: "The supreme Halloween delicacy with thick peanut butter." }, c2: { seed: 2, name: "Twix (Fun Size Bars)", votes: 548, emoji: "🍫", desc: "Crunchy cookie biscuit draped in caramel and milk chocolate." } },
+      { id: "L2", round: 1, c1: { seed: 3, name: "Kit Kat (Snack Size)", votes: 412, emoji: "🧇", desc: "Crisp wafer fingers made to snap in half and trade." }, c2: { seed: 4, name: "Snickers (Fun Size)", votes: 395, emoji: "🥜", desc: "Roasted peanuts, nougat, caramel. Heavyweight king." } },
+      { id: "L3", round: 1, c1: { seed: 5, name: "Peanut M&M's Treat Bag", votes: 388, emoji: "🟡", desc: "Salty roasted peanuts encased in chocolate and candy shell." }, c2: { seed: 6, name: "Milky Way (Fun Size)", votes: 290, emoji: "🌌", desc: "Whipped malt nougat swimming under golden caramel." } },
+      { id: "L4", round: 1, c1: { seed: 7, name: "Butterfinger Snack Size", votes: 340, emoji: "⚡", desc: "Crispy crunchy peanut butter honeycomb core." }, c2: { seed: 8, name: "Nestlé Crunch Bar", votes: 315, emoji: "🍚", desc: "Crisped rice chocolate bar that actually snaps." } },
+      { id: "L5", round: 1, c1: { seed: 9, name: "Starburst (Original 2-Pack)", votes: 480, emoji: "🍬", desc: "Hoping for double pink or red squares in every pack." }, c2: { seed: 10, name: "Skittles (Original Fun Size)", votes: 462, emoji: "🌈", desc: "The five fruit rainbow chews that everyone trades for." } },
+      { id: "L6", round: 1, c1: { seed: 11, name: "Sour Patch Kids Pouches", votes: 512, emoji: "🍋", desc: "First they're sour, then they're sweet. Top sour treat." }, c2: { seed: 12, name: "Haribo Goldbears Mini Bag", votes: 489, emoji: "🐻", desc: "Authentic firm German gummies that chew forever." } },
+      { id: "L7", round: 1, c1: { seed: 13, name: "Swedish Fish Mini Pack", votes: 299, emoji: "🐟", desc: "Chewy lingonberry-flavored red fish that never get old." }, c2: { seed: 14, name: "Airheads (Mystery/Cherry)", votes: 330, emoji: "🎈", desc: "Stretchy taffy bars with maximum flavor punch." } },
+      { id: "L8", round: 1, c1: { seed: 15, name: "100 Grand Fun Size", votes: 275, emoji: "💵", desc: "Caramel, crisped rice, and rich milk chocolate." }, c2: { seed: 16, name: "Take 5 Snack Size", votes: 260, emoji: "🖐️", desc: "Pretzel, peanut butter, peanuts, caramel, and chocolate." } },
+
+      // RIGHT WING (DIVISIVE STAPLES & TRICK-OR-TREAT BASEMENT RELICS)
+      { id: "R1", round: 1, c1: { seed: 49, name: "Dum-Dums Mystery Flavors", votes: 220, emoji: "🍭", desc: "Small stick pops handed out by banks and dentists." }, c2: { seed: 50, name: "Smarties Candy Rolls", votes: 245, emoji: "⚪", desc: "Chalky rolls of pure compressed dextrose." } },
+      { id: "R2", round: 1, c1: { seed: 51, name: "Fun Dip (1 Stick + Powder)", votes: 290, emoji: "🪄", desc: "Edible chalk stick dipped into sour sugar dust." }, c2: { seed: 52, name: "Pop Rocks (Cherry Pack)", votes: 310, emoji: "💥", desc: "Carbonated crystals that explode on your tongue." } },
+      { id: "R3", round: 1, c1: { seed: 53, name: "Dots Mini Box", votes: 190, emoji: "🟡", desc: "Gelatinous gumdrops that weld your molars together." }, c2: { seed: 54, name: "Jujyfruits Mini Box", votes: 180, emoji: "🍇", desc: "Firm vintage fruit chews shaped like asparagus and beans." } },
+      { id: "R4", round: 1, c1: { seed: 55, name: "Dubble Bubble Twist Gum", votes: 160, emoji: "🫧", desc: "Rock hard pink gum that loses flavor after 90 seconds." }, c2: { seed: 56, name: "Bazooka Bubble Gum", votes: 150, emoji: "🗞️", desc: "Classic gum complete with a comic strip wrapper." } },
+      { id: "R5", round: 1, c1: { seed: 57, name: "Original Tootsie Roll Midges", votes: 215, emoji: "🟫", desc: "Chewy chocolate-ish cylinders in twist wrap." }, c2: { seed: 58, name: "Sugar Daddy Caramel Pops", votes: 198, emoji: "🪓", desc: "Hard flat caramel slab on a stick—dental hazard." } },
+      { id: "R6", round: 1, c1: { seed: 59, name: "Necco Wafers Mini Roll", votes: 130, emoji: "🪙", desc: "Dry, powdery chalk discs that taste like dusty vintage medicine." }, c2: { seed: 60, name: "Good & Plenty Mini Box", votes: 142, emoji: "💊", desc: "Pink and white capsules filled with bitter anise." } },
+      { id: "R7", round: 1, c1: { seed: 61, name: "Spangler Circus Peanuts", votes: 175, emoji: "🥜", desc: "Neon orange banana-flavored spongy styrofoam." }, c2: { seed: 62, name: "Peeps Halloween Ghosts", votes: 182, emoji: "👻", desc: "Sugar crusted marshmallow pumpkins that turn stiff." } },
+      { id: "R8", round: 1, c1: { seed: 63, name: "Brach's Candy Corn Treat Pack", votes: 210, emoji: "🌽", desc: "Waxy tri-color kernels made of corn syrup and honey." }, c2: { seed: 64, name: "Peanut Butter Kisses in Wax", votes: 228, emoji: "🎃", desc: "Generic peanut taffy in unlabeled orange and black wax." } }
+    ];
+
+    // APPLICATION STATE
+    let tournamentState = {
+      currentRound: 1, // 1 = R64, 2 = R32, 3 = Sweet16, 4 = Elite8, 5 = Final4, 6 = Championship
+      roundTimerSeconds: 4 * 86400 + 13 * 3600 + 28 * 60 + 14,
+      round1: JSON.parse(JSON.stringify(INITIAL_ROUND_1_MATCHUPS)),
+      round2: [], // Empty/unpopulated until Round 1 ends!
+      round3: [], // Empty until Round 2 ends!
+      round4: [],
+      round5: [],
+      round6: []
+    };
+
+    let currentSpotlightMatchupIndex = 0;
+    let audioEnabled = true;
+    let audioContext = null;
+    let isTvFitted = false;
+
+    // Load LocalStorage if available
+    function loadPersistedState() {
+      try {
+        const saved = localStorage.getItem("coreplex_candy_state_v1");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.currentRound) {
+            tournamentState = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem("coreplex_candy_state_v1", JSON.stringify(tournamentState));
+      } catch (e) {}
+    }
+
+    // AUDIO SYNTHESIZER
+    function getAudioCtx() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        if (type === 'vote') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.14);
+        } else if (type === 'advance') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.35);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        }
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      if (icon) {
+        icon.className = audioEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-gray-500';
+      }
+    }
+
+    /* =========================================================
+       BRACKET RENDERING WITH PROGRESSIVE LOCK ENFORCEMENT
+       ========================================================= */
+    function renderTournamentBoard() {
+      const curRound = tournamentState.currentRound;
+      document.getElementById('currentRoundBadge').innerText = `ROUND ${curRound} OF 6`;
+
+      // 1. Render Left & Right Round 1 (Round of 64)
+      const colL64 = document.getElementById("colLeftR64");
+      const colR64 = document.getElementById("colRightR64");
+      colL64.innerHTML = "";
+      colR64.innerHTML = "";
+
+      const leftR1 = tournamentState.round1.slice(0, 8);
+      const rightR1 = tournamentState.round1.slice(8, 16);
+
+      leftR1.forEach((m, idx) => {
+        colL64.appendChild(createMatchupElement(m, 1, idx, true));
+      });
+      rightR1.forEach((m, idx) => {
+        colR64.appendChild(createMatchupElement(m, 1, idx + 8, false));
+      });
+
+      // 2. Render Left & Right Round 2 (Round of 32)
+      renderRound32Column();
+
+      // 3. Render Sweet 16
+      renderSweet16Column();
+
+      // 4. Update Center Court Championship Slot
+      updateCenterChampionship();
+    }
+
+    // Helper to render Round of 32 (Locked or Populated)
+    function renderRound32Column() {
+      const colL32 = document.getElementById("colLeftR32");
+      const colR32 = document.getElementById("colRightR32");
+      const labelL32 = document.getElementById("labelLeftR32");
+      const labelR32 = document.getElementById("labelRightR32");
+
+      colL32.innerHTML = "";
+      colR32.innerHTML = "";
+
+      const isR2Active = tournamentState.currentRound === 2;
+      const isR2Unlocked = tournamentState.currentRound >= 2;
+
+      if (isR2Unlocked) {
+        labelL32.className = "text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket flex items-center justify-center gap-1";
+        labelL32.innerHTML = `<span class="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse"></span> Round 2: Round of 32`;
+        labelR32.className = "text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket flex items-center justify-center gap-1";
+        labelR32.innerHTML = `<span class="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse"></span> Round 2: Round of 32`;
+
+        // Render actual populated Round 2 matchups
+        const leftR2 = tournamentState.round2.slice(0, 4);
+        const rightR2 = tournamentState.round2.slice(4, 8);
+
+        leftR2.forEach((m, idx) => {
+          colL32.appendChild(createMatchupElement(m, 2, idx, true));
+        });
+        rightR2.forEach((m, idx) => {
+          colR32.appendChild(createMatchupElement(m, 2, idx + 4, false));
+        });
+      } else {
+        labelL32.className = "text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1";
+        labelL32.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> Round 2: Round of 32`;
+        labelR32.className = "text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1";
+        labelR32.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> Round 2: Round of 32`;
+
+        // Render 4 Locked placeholders on left, 4 on right
+        for (let i = 0; i < 4; i++) {
+          colL32.appendChild(createLockedSlot(`Winner of Match #${i*2+1}`, `Winner of Match #${i*2+2}`, "Round 2 Slot"));
+          colR32.appendChild(createLockedSlot(`Winner of Match #${i*2+9}`, `Winner of Match #${i*2+10}`, "Round 2 Slot"));
+        }
+      }
+    }
+
+    // Helper to render Sweet 16 (Locked or Populated)
+    function renderSweet16Column() {
+      const colLS16 = document.getElementById("colLeftS16");
+      const colRS16 = document.getElementById("colRightS16");
+      const labelLS16 = document.getElementById("labelLeftS16");
+      const labelRS16 = document.getElementById("labelRightS16");
+
+      colLS16.innerHTML = "";
+      colRS16.innerHTML = "";
+
+      const isS16Unlocked = tournamentState.currentRound >= 3;
+
+      if (isS16Unlocked) {
+        labelLS16.className = "text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket";
+        labelLS16.innerHTML = `Sweet 16 (Active)`;
+        labelRS16.className = "text-xs font-black uppercase tracking-widest text-[#FF6A00] font-bracket";
+        labelRS16.innerHTML = `Sweet 16 (Active)`;
+
+        const leftR3 = tournamentState.round3.slice(0, 2);
+        const rightR3 = tournamentState.round3.slice(2, 4);
+
+        leftR3.forEach((m, idx) => {
+          colLS16.appendChild(createMatchupElement(m, 3, idx, true));
+        });
+        rightR3.forEach((m, idx) => {
+          colRS16.appendChild(createMatchupElement(m, 3, idx + 2, false));
+        });
+      } else {
+        labelLS16.className = "text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1";
+        labelLS16.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> Round 3: Sweet 16`;
+        labelRS16.className = "text-xs font-black uppercase tracking-widest text-gray-400 font-bracket flex items-center justify-center gap-1";
+        labelRS16.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> Round 3: Sweet 16`;
+
+        // 2 locked placeholders each
+        colLS16.appendChild(createLockedSlot("Awaiting R2 Left #1", "Awaiting R2 Left #2", "Sweet 16 Semi"));
+        colLS16.appendChild(createLockedSlot("Awaiting R2 Left #3", "Awaiting R2 Left #4", "Sweet 16 Semi"));
+
+        colRS16.appendChild(createLockedSlot("Awaiting R2 Right #1", "Awaiting R2 Right #2", "Sweet 16 Semi"));
+        colRS16.appendChild(createLockedSlot("Awaiting R2 Right #3", "Awaiting R2 Right #4", "Sweet 16 Semi"));
+      }
+    }
+
+    // Helper for Center Court
+    function updateCenterChampionship() {
+      const champNameA = document.getElementById("champNameA");
+      const champNameB = document.getElementById("champNameB");
+
+      if (tournamentState.currentRound === 6 && tournamentState.round6.length > 0) {
+        const m = tournamentState.round6[0];
+        champNameA.innerText = `#${m.c1.seed} ${m.c1.name}`;
+        champNameB.innerText = `#${m.c2.seed} ${m.c2.name}`;
+        document.getElementById("champSlotA").classList.remove("border-dashed");
+        document.getElementById("champSlotB").classList.remove("border-dashed");
+      } else {
+        champNameA.innerText = "Awaiting Semi-Final 1 Result";
+        champNameB.innerText = "Awaiting Semi-Final 2 Result";
+      }
+    }
+
+    // Card Builder for Active / Populated Matchups
+    function createMatchupElement(m, roundNum, globalIndex, isLeft) {
+      const card = document.createElement("div");
+      const isActiveRound = tournamentState.currentRound === roundNum;
+      
+      card.className = `slot-card rounded-xl p-2.5 space-y-1.5 cursor-pointer shadow-md bg-[#131313] border ${isActiveRound ? 'border-[#2D2D2D] active-round' : 'border-[#1F1F1F] opacity-75'}`;
+      
+      const total = m.c1.votes + m.c2.votes;
+      const pct1 = total > 0 ? Math.round((m.c1.votes / total) * 100) : 50;
+      const pct2 = 100 - pct1;
+
+      card.onclick = () => {
+        if (isActiveRound) {
+          jumpToSpotlight(globalIndex, roundNum);
+        } else {
+          showToast(`This round is not currently open for voting!`);
+        }
+      };
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] font-semibold text-gray-200">
+          <span class="truncate max-w-[135px] flex items-center gap-1">
+            <span class="text-[#FF6A00] font-bracket font-black text-xs">#${m.c1.seed}</span>
+            <span class="truncate">${m.c1.name}</span>
+          </span>
+          <span class="font-bracket font-bold ${pct1 >= pct2 ? 'text-[#FF6A00]' : 'text-gray-400'} ml-1.5">${pct1}%</span>
+        </div>
+        
+        <div class="w-full h-1.5 bg-[#202020] rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-[#FF6A00] to-[#FFA133] transition-all duration-300" style="width: ${pct1}%"></div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] font-semibold text-gray-200 pt-0.5">
+          <span class="truncate max-w-[135px] flex items-center gap-1">
+            <span class="text-[#FF6A00] font-bracket font-black text-xs">#${m.c2.seed}</span>
+            <span class="truncate">${m.c2.name}</span>
+          </span>
+          <span class="font-bracket font-bold ${pct2 >= pct1 ? 'text-[#FF6A00]' : 'text-gray-400'} ml-1.5">${pct2}%</span>
+        </div>
+      `;
+      return card;
+    }
+
+    // Card Builder for Locked / Future Slots
+    function createLockedSlot(slot1Text, slot2Text, label) {
+      const box = document.createElement("div");
+      box.className = "slot-card locked-round rounded-xl p-2.5 space-y-1.5 border border-[#262626]";
+      box.innerHTML = `
+        <div class="flex items-center justify-between text-[9px] uppercase font-bold text-gray-500 font-bracket tracking-wider border-b border-[#1F1F1F] pb-1">
+          <span>${label}</span>
+          <span class="flex items-center gap-1 text-[#FF6A00]"><i class="fa-solid fa-lock text-[8px]"></i> LOCKED</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-gray-500 py-0.5">
+          <span class="truncate max-w-[140px] italic font-medium">${slot1Text}</span>
+          <span class="text-[9px] text-gray-600 font-mono">TBD</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-gray-500 py-0.5">
+          <span class="truncate max-w-[140px] italic font-medium">${slot2Text}</span>
+          <span class="text-[9px] text-gray-600 font-mono">TBD</span>
+        </div>
+      `;
+      return box;
+    }
+
+    /* =========================================================
+       ROUND ADVANCEMENT LOGIC (ADVANCE ROUND OF 64 -> 32 -> ETC.)
+       ========================================================= */
+    function adminConcludeRound() {
+      const curRound = tournamentState.currentRound;
+
+      if (curRound === 1) {
+        // Advance Round 1 into Round 2 (Round of 32)
+        const activeList = tournamentState.round1;
+        const newR2 = [];
+
+        for (let i = 0; i < activeList.length; i += 2) {
+          const matchA = activeList[i];
+          const matchB = activeList[i + 1];
+
+          // Winner of Match A
+          const winnerA = matchA.c1.votes >= matchA.c2.votes ? { ...matchA.c1 } : { ...matchA.c2 };
+          winnerA.votes = 100 + Math.floor(Math.random() * 25); // reset votes for new round
+
+          // Winner of Match B
+          const winnerB = matchB.c1.votes >= matchB.c2.votes ? { ...matchB.c1 } : { ...matchB.c2 };
+          winnerB.votes = 100 + Math.floor(Math.random() * 25);
+
+          newR2.push({
+            id: `R2_${i / 2 + 1}`,
+            round: 2,
+            c1: winnerA,
+            c2: winnerB
+          });
+        }
+
+        tournamentState.round2 = newR2;
+        tournamentState.currentRound = 2;
+        tournamentState.roundTimerSeconds = 7 * 86400; // Reset to 1 week for Round 2
+        document.getElementById("roundTimerLabel").innerText = "ROUND 2 VOTING LOCKS IN";
+
+        playSound('advance');
+        triggerConfetti();
+        showToast("ROUND 1 CONCLUDED! Round of 32 is now UNLOCKED and populated!");
+
+      } else if (curRound === 2) {
+        // Advance Round 2 into Sweet 16
+        const activeList = tournamentState.round2;
+        const newR3 = [];
+
+        for (let i = 0; i < activeList.length; i += 2) {
+          const matchA = activeList[i];
+          const matchB = activeList[i + 1];
+
+          const winnerA = matchA.c1.votes >= matchA.c2.votes ? { ...matchA.c1 } : { ...matchA.c2 };
+          winnerA.votes = 150 + Math.floor(Math.random() * 30);
+
+          const winnerB = matchB.c1.votes >= matchB.c2.votes ? { ...matchB.c1 } : { ...matchB.c2 };
+          winnerB.votes = 150 + Math.floor(Math.random() * 30);
+
+          newR3.push({
+            id: `R3_${i / 2 + 1}`,
+            round: 3,
+            c1: winnerA,
+            c2: winnerB
+          });
+        }
+
+        tournamentState.round3 = newR3;
+        tournamentState.currentRound = 3;
+        tournamentState.roundTimerSeconds = 7 * 86400;
+        document.getElementById("roundTimerLabel").innerText = "SWEET 16 VOTING LOCKS IN";
+
+        playSound('advance');
+        triggerConfetti();
+        showToast("ROUND 2 CONCLUDED! Sweet 16 is now UNLOCKED!");
+
+      } else {
+        showToast(`Round ${curRound} complete!`);
+      }
+
+      saveState();
+      renderTournamentBoard();
+      updateSpotlightView();
+    }
+
+    function resetTournamentCompletely() {
+      tournamentState.currentRound = 1;
+      tournamentState.round1 = JSON.parse(JSON.stringify(INITIAL_ROUND_1_MATCHUPS));
+      tournamentState.round2 = [];
+      tournamentState.round3 = [];
+      tournamentState.roundTimerSeconds = 4 * 86400 + 13 * 3600 + 28 * 60;
+      document.getElementById("roundTimerLabel").innerText = "ROUND 1 VOTING LOCKS IN";
+
+      saveState();
+      renderTournamentBoard();
+      updateSpotlightView();
+      showToast("Tournament reset to Round 1! Later rounds locked.");
+    }
+
+    /* =========================================================
+       TV ARENA SPOTLIGHT CONTROLS
+       ========================================================= */
+    function getActiveMatchupList() {
+      if (tournamentState.currentRound === 1) return tournamentState.round1;
+      if (tournamentState.currentRound === 2) return tournamentState.round2;
+      if (tournamentState.currentRound === 3) return tournamentState.round3;
+      return tournamentState.round1;
+    }
+
+    function updateSpotlightView() {
+      const activeList = getActiveMatchupList();
+      if (!activeList || activeList.length === 0) return;
+
+      if (currentSpotlightMatchupIndex >= activeList.length) {
+        currentSpotlightMatchupIndex = 0;
+      }
+
+      const m = activeList[currentSpotlightMatchupIndex];
+
+      document.getElementById('arenaMatchupTitle').innerText = `Round ${m.round || tournamentState.currentRound}: ${m.c1.name} vs ${m.c2.name}`;
+      document.getElementById('arenaCounterBadge').innerText = `${currentSpotlightMatchupIndex + 1} / ${activeList.length}`;
+
+      // Contender A
+      document.getElementById('spotlightSeedA').innerText = `SEED #${m.c1.seed}`;
+      document.getElementById('spotlightEmojiA').innerText = m.c1.emoji || "🎃";
+      document.getElementById('spotlightNameA').innerText = m.c1.name;
+      document.getElementById('spotlightDescA').innerText = m.c1.desc || "Halloween Favorite";
+      document.getElementById('spotlightVotesA').innerText = m.c1.votes.toLocaleString();
+      document.getElementById('voteBtnLabelA').innerText = `Vote For ${m.c1.name.split(' ')[0]}`;
+
+      // Contender B
+      document.getElementById('spotlightSeedB').innerText = `SEED #${m.c2.seed}`;
+      document.getElementById('spotlightEmojiB').innerText = m.c2.emoji || "🍫";
+      document.getElementById('spotlightNameB').innerText = m.c2.name;
+      document.getElementById('spotlightDescB').innerText = m.c2.desc || "Halloween Favorite";
+      document.getElementById('spotlightVotesB').innerText = m.c2.votes.toLocaleString();
+      document.getElementById('voteBtnLabelB').innerText = `Vote For ${m.c2.name.split(' ')[0]}`;
+
+      const total = m.c1.votes + m.c2.votes;
+      const pctA = total > 0 ? Math.round((m.c1.votes / total) * 100) : 50;
+      const pctB = 100 - pctA;
+
+      document.getElementById('spotlightPercentA').innerText = `${pctA}%`;
+      document.getElementById('spotlightBarA').style.width = `${pctA}%`;
+
+      document.getElementById('spotlightPercentB').innerText = `${pctB}%`;
+      document.getElementById('spotlightBarB').style.width = `${pctB}%`;
+
+      renderSpotlightRail();
+    }
+
+    function renderSpotlightRail() {
+      const rail = document.getElementById('spotlightRail');
+      const activeList = getActiveMatchupList();
+      rail.innerHTML = '';
+
+      activeList.forEach((m, idx) => {
+        const item = document.createElement('div');
+        const active = idx === currentSpotlightMatchupIndex;
+        item.className = `p-2 rounded-lg text-center cursor-pointer border text-xs transition ${active ? 'bg-[#FF6A00]/20 border-[#FF6A00] text-white font-bold' : 'bg-[#151515] border-[#262626] text-gray-400 hover:text-white'}`;
+        item.onclick = () => jumpToSpotlight(idx, tournamentState.currentRound);
+        item.innerHTML = `
+          <div class="text-[9px] font-bracket text-[#FF6A00]">#${idx + 1}</div>
+          <div class="truncate text-[10px]">${m.c1.name.split(' ')[0]}</div>
+          <div class="text-[8px] text-gray-500">vs</div>
+          <div class="truncate text-[10px]">${m.c2.name.split(' ')[0]}</div>
+        `;
+        rail.appendChild(item);
+      });
+    }
+
+    function castSpotlightVote(contenderKey) {
+      const activeList = getActiveMatchupList();
+      const m = activeList[currentSpotlightMatchupIndex];
+
+      if (contenderKey === 'c1') {
+        m.c1.votes += 1;
+        showToast(`Vote counted for ${m.c1.name}!`);
+      } else {
+        m.c2.votes += 1;
+        showToast(`Vote counted for ${m.c2.name}!`);
+      }
+
+      playSound('vote');
+      triggerConfetti();
+      saveState();
+      updateSpotlightView();
+      renderTournamentBoard();
+    }
+
+    function jumpToSpotlight(idx, roundNum) {
+      if (roundNum !== tournamentState.currentRound) {
+        showToast(`Viewing active round: Round ${tournamentState.currentRound}`);
+        return;
+      }
+      currentSpotlightMatchupIndex = idx;
+      switchView('arena');
+      updateSpotlightView();
+    }
+
+    function nextArenaMatchup() {
+      const activeList = getActiveMatchupList();
+      currentSpotlightMatchupIndex = (currentSpotlightMatchupIndex + 1) % activeList.length;
+      updateSpotlightView();
+    }
+
+    function prevArenaMatchup() {
+      const activeList = getActiveMatchupList();
+      currentSpotlightMatchupIndex = (currentSpotlightMatchupIndex - 1 + activeList.length) % activeList.length;
+      updateSpotlightView();
+    }
+
+    function triggerConfetti() {
+      try {
+        confetti({
+          particleCount: 35,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ['#FF6A00', '#FFA133', '#111111', '#FFFFFF']
+        });
+      } catch (e) {}
+    }
+
+    /* =========================================================
+       VIEW SWITCHING, FIT TOGGLES, AND LIVE TIMERS
+       ========================================================= */
+    function switchView(view) {
+      const vBracket = document.getElementById("viewBracket");
+      const vArena = document.getElementById("viewArena");
+      const btnB = document.getElementById("btnTabBracket");
+      const btnA = document.getElementById("btnTabArena");
+
+      if (view === 'bracket') {
+        vBracket.classList.remove('hidden');
+        vArena.classList.add('hidden');
+        btnB.className = "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-[#FF6A00] text-black shadow-lg transition-all flex items-center gap-1.5";
+        btnA.className = "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center gap-1.5";
+      } else {
+        vBracket.classList.add('hidden');
+        vArena.classList.remove('hidden');
+        btnA.className = "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-[#FF6A00] text-black shadow-lg transition-all flex items-center gap-1.5";
+        btnB.className = "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-gray-400 hover:text-white transition-all flex items-center gap-1.5";
+        updateSpotlightView();
+      }
+    }
+
+    function toggleTvFit() {
+      isTvFitted = !isTvFitted;
+      const board = document.getElementById("bracketGrid");
+      const label = document.getElementById("fitLabel");
+      if (isTvFitted) {
+        board.classList.add("tv-scale-fit");
+        label.innerText = "Normal View";
+        showToast("Bracket scaled to fit widescreen TV!");
+      } else {
+        board.classList.remove("tv-scale-fit");
+        label.innerText = "Fit TV";
+      }
+    }
+
+    // Modal controls
+    function openQrModal() {
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function toggleAdminPanel() {
+      document.getElementById('adminCard').classList.toggle('hidden');
+    }
+
+    function setTimerSeconds(sec) {
+      tournamentState.roundTimerSeconds = sec;
+      showToast(`Countdown timer set to ${sec} seconds!`);
+    }
+
+    function injectRandomVotes(count) {
+      const activeList = getActiveMatchupList();
+      for (let i = 0; i < count; i++) {
+        const m = activeList[Math.floor(Math.random() * activeList.length)];
+        if (Math.random() > 0.5) {
+          m.c1.votes += 1;
+        } else {
+          m.c2.votes += 1;
+        }
+      }
+      playSound('vote');
+      saveState();
+      updateSpotlightView();
+      renderTournamentBoard();
+      showToast(`Injected ${count} crowd votes into active round!`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("voteToast");
+      document.getElementById("toastMessage").innerText = msg;
+      toast.classList.remove("opacity-0", "translate-y-4");
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-4");
+      }, 2500);
+    }
+
+    // Main 1-Second Timer Loop
+    setInterval(() => {
+      if (tournamentState.roundTimerSeconds > 0) {
+        tournamentState.roundTimerSeconds--;
+        const s = tournamentState.roundTimerSeconds;
+        const d = Math.floor(s / 86400);
+        const h = Math.floor((s % 86400) / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        document.getElementById("roundTimerDisplay").innerText = 
+          `${pad(d)}d : ${pad(h)}h : ${pad(m)}m : ${pad(sec)}s`;
+      } else {
+        // Timer reached zero -> automatically trigger round advancement!
+        adminConcludeRound();
+      }
+    }, 1000);
+
+    // Auto-cycle TV Carousel in Arena Mode
+    setInterval(() => {
+      const vArena = document.getElementById("viewArena");
+      if (vArena && !vArena.classList.contains('hidden')) {
+        nextArenaMatchup();
+      }
+    }, 10000);
+
+    // Initializer
+    window.onload = function() {
+      loadPersistedState();
+      renderTournamentBoard();
+      updateSpotlightView();
+    };
+  </script>
+</body>
+</html>
